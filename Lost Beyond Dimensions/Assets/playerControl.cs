@@ -1,80 +1,32 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-public class playerControl : MonoBehaviour
+public class PlayerMovement : MonoBehaviour
 {
-    private PlayerControls playerControls;
-    private Vector2 moveInput;
+    public float moveSpeed = 5f;
     private Rigidbody2D rb;
     private Animator animator;
+    private Vector2 moveInput;
 
-    public float moveSpeed = 5f;
-    public float dashForce = 10f;
-    public float dashCooldown = 1f;
-    private float lastDashTime;
-
-    private bool isDashing = false;
-
-    private void Awake()
-    {
-        playerControls = new PlayerControls();
-
-        // Read movement input
-        playerControls.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
-        playerControls.Player.Move.canceled += ctx => moveInput = Vector2.zero;
-
-        // Dash input
-        playerControls.Player.Dash.performed += ctx => TryDash();
-    }
-
-    private void OnEnable()
-    {
-        playerControls.Enable();
-    }
-
-    private void OnDisable()
-    {
-        playerControls.Disable();
-    }
-
-    private void Start()
+    void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>(); // ?? Link to Animator
+        animator = GetComponent<Animator>();
     }
 
-    private void Update()
+    void Update()
     {
-        // Apply movement
-        if (!isDashing)
-        {
-            rb.linearVelocity = moveInput * moveSpeed;
-        }
+        moveInput.x = Input.GetAxisRaw("Horizontal"); // A/D or Left/Right Arrow
+        moveInput.y = Input.GetAxisRaw("Vertical");   // W/S or Up/Down Arrow
+        moveInput.Normalize();
 
-        // Update animation parameters
+        // Animation parameters
         animator.SetFloat("MoveX", moveInput.x);
         animator.SetFloat("MoveY", moveInput.y);
         animator.SetFloat("Speed", moveInput.sqrMagnitude);
-        animator.SetBool("IsDashing", isDashing);
     }
 
-    private void TryDash()
+    void FixedUpdate()
     {
-        if (Time.time >= lastDashTime + dashCooldown && moveInput != Vector2.zero)
-        {
-            lastDashTime = Time.time;
-            isDashing = true;
-
-            rb.linearVelocity = Vector2.zero; // Optional: stop movement briefly
-            rb.AddForce(moveInput.normalized * dashForce, ForceMode2D.Impulse);
-
-            // Optional: stop dash after short time
-            Invoke("EndDash", 0.2f); // Dash lasts 0.2 seconds
-        }
-    }
-
-    private void EndDash()
-    {
-        isDashing = false;
+        rb.linearVelocity = moveInput * moveSpeed;
     }
 }
